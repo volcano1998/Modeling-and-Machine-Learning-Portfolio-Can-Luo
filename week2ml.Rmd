@@ -1,0 +1,183 @@
+---
+title: "R Notebook"
+---
+```{r load packages}
+library(ElemStatLearn)
+library(dplyr)
+```
+
+
+```{r load data}
+## load prostate data
+data("prostate")
+## subset to training examples
+prostate_train <- subset(prostate, train=TRUE)
+```
+
+
+```{r linear functions}
+## plot lcavol vs lpsa
+plot_psa_data <- function(dat=prostate_train) {
+  plot(dat$lpsa, dat$lcavol,
+       xlab="log Prostate Screening Antigen (psa)",
+       ylab="log Cancer Volume (lcavol)")
+}
+
+#absolute error
+L1_loss<- function(y, yhat,tau=0.5){
+  case_when(
+    (y-yhat)>0~tau*(y-yhat),
+    T~(tau-1)*(y-yhat)
+  )
+}
+
+#squred error
+L2_loss <- function(y, yhat,tau=0.5){
+  case_when(
+    (y-yhat)>0~tau*(y-yhat)*(y-yhat),
+    T~(1-tau)*(y-yhat)*(y-yhat)
+  )
+}
+
+## fit simple linear model using numerical optimization
+fit_lin <- function(y, x, loss=L2_loss, beta_init = c(-0.51, 0.75),tau=0.5) {#try different initial value and compare their accuracy 
+  err <- function(beta,taue=tau)
+    mean(loss(y,  beta[1] + beta[2]*x,taue))# training error
+  beta <- optim(par = beta_init, fn = err)
+  #A function to be minimized (or maximized), with first argument the vector of parameters over which minimization is to take place. It should return a scalar result.
+  return(beta)
+}
+
+## make predictions from linear model
+predict_lin <- function(x, beta) beta[1] + beta[2]*x
+```
+
+
+```{r input}
+## compute predictions for a grid of inputs
+x_grid <- seq(min(prostate_train$lpsa),
+              max(prostate_train$lpsa),
+              length.out=100)
+```
+
+
+
+Create a figure that shows lpsa (x-axis) versus lcavol (y-axis). Add and label (using the 'legend' function) the linear model predictors associated with 
+L2 loss, 
+
+```{r loss=l2}
+# l2 loss
+lin_beta_2 <- fit_lin(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L2_loss)
+lin_pred_2 <- predict_lin(x=x_grid, beta=lin_beta_2$par)
+
+# L1 loss
+
+lin_beta_1 <- fit_lin(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L1_loss)
+lin_pred_1 <- predict_lin(x=x_grid, beta=lin_beta_1$par)
+
+# loss=l1,tau=0.25
+
+lin_beta_tilted_25 <- fit_lin(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L1_loss,
+                    tau=0.25)
+lin_pred_tilted_25 <- predict_lin(x=x_grid, beta=lin_beta_tilted_25$par)
+
+#loss=l1,tau=0.75
+
+lin_beta_tilted_75 <- fit_lin(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L1_loss,
+                    tau=0.75)
+lin_pred_tilted_75 <- predict_lin(x=x_grid, beta=lin_beta_tilted_75$par)
+
+
+## plot data
+plot_psa_data()
+## plot predictions
+lines(x=x_grid, y=lin_pred_1,col='red')
+lines(x=x_grid, y=lin_pred_2,col='orange')
+lines(x=x_grid, y=lin_pred_tilted_25,col='green')
+lines(x=x_grid, y=lin_pred_tilted_75,col='blue')
+```
+
+
+
+Write functions to fit and predict from a simple exponential (nonlinear) model with three parameters defined by 'beta[1] + beta[2]*exp(-beta[3]*x)'. Hint: make copies of 'fit_lin' and 'predict_lin' and modify them to fit the nonlinear model. Use c(-1.0, 0.0, -0.3) as 'beta_init'.
+
+```{r non-linear model}
+
+## fit simple non-linear model using numerical optimization
+fit_exp <- function(y, x, loss=L2_loss, beta_init = c(-1.0, 0.0, -0.3),tau=0.5) {
+  err <- function(beta,taue=tau)
+    mean(loss(y,  beta[1] + beta[2]*exp(-beta[3]*x),taue))# training error
+  beta <- (optim(par = beta_init, fn = err))
+  return(beta)
+}
+
+## make predictions from non-linear model
+model_exp <- function(beta){
+  beta<-beta[[1]]
+   exp_model<-function(x){
+    beta[1] + beta[2]*exp(-beta[3]*x)
+  }
+  return(exp_model)
+}
+
+```
+
+
+Create a figure that shows lpsa (x-axis) versus lcavol (y-axis). Add and label (using the 'legend' function) the nonlinear model predictors associated with L2 loss, L1 loss, and tilted absolute value loss for tau = 0.25 and 0.75.
+
+```{r}
+
+# l2 loss
+exp_beta_2 <- fit_exp(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L2_loss)
+
+exp_beta_2 %>% model_exp->exp_model2
+
+#l1 loss
+exp_beta_1 <- fit_exp(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L1_loss)
+exp_beta_1 %>% model_exp->exp_model1
+
+#l1 loss,tau=0.25
+exp_beta_tilt_25 <- fit_exp(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L1_loss,
+                    tau=0.25)
+exp_beta_tilt_25 %>% model_exp->exp_model_tilt25
+
+
+#l1 loss,tau=0.75
+exp_beta_tilt_75 <- fit_exp(y=prostate_train$lcavol,
+                    x=prostate_train$lpsa,
+                    loss=L1_loss,
+                    tau=0.75)
+exp_beta_tilt_75 %>% model_exp->exp_model_tilt75
+
+## plot data
+plot_psa_data()
+## plot predictions
+curve(exp_model1,from=0,to=15,add=T,col='red')
+curve(exp_model2,from=0,to=15,add=T,col='orange')
+curve(exp_model_tilt25,from=0,to=15,add=T,col='blue')
+curve(exp_model_tilt75,from=0,to=15,add=T,col='green')
+```
+
+
+
+
+
+
+
+
+
+
