@@ -1,6 +1,23 @@
 ---
-title: "R Notebook"
+title: "Loss function"
+author: "Can,Luo"
+date: "`r date()`"
+output: md_document
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In mathematical optimization and decision theory, a loss function or cost function is a function that maps an event or values of one or more variables onto a real number intuitively representing some "cost" associated with the event. An optimization problem seeks to minimize a loss function.
+
+Frequently used loss functions are L1 loss and L2 loss function.L1 Loss function stands for Least Absolute Deviations. Also known as LAD. L2 Loss function stands for Least Square Errors. Also known as LS. Especially, we have titled loss function to adjust the extent of penalizing.
+
+In this blog, we try linear and non-linear model to fit the data, with L1, L2 and tilted L1 loss function.
+
+# Linear Model
 ```{r load packages}
 library(ElemStatLearn)
 library(dplyr)
@@ -11,7 +28,7 @@ library(dplyr)
 ## load prostate data
 data("prostate")
 ## subset to training examples
-prostate_train <- subset(prostate, train=TRUE)
+prostate_train <- subset(prostate, train==TRUE)
 ```
 
 
@@ -62,10 +79,9 @@ x_grid <- seq(min(prostate_train$lpsa),
 
 
 
-Create a figure that shows lpsa (x-axis) versus lcavol (y-axis). Add and label (using the 'legend' function) the linear model predictors associated with 
-L2 loss, 
 
-```{r loss=l2}
+
+```{r linear fit}
 # l2 loss
 lin_beta_2 <- fit_lin(y=prostate_train$lcavol,
                     x=prostate_train$lpsa,
@@ -103,11 +119,13 @@ lines(x=x_grid, y=lin_pred_1,col='red')
 lines(x=x_grid, y=lin_pred_2,col='orange')
 lines(x=x_grid, y=lin_pred_tilted_25,col='green')
 lines(x=x_grid, y=lin_pred_tilted_75,col='blue')
+legend(4,1.3,legend = c('L1 loss','L2 loss','tilted(tau=0.25)','tilted(tau=0.75)'),lty=1:1,col=c('red','orange','green','blue'),title='method',cex=0.8)
+title(main='linear model fitting')
 ```
 
 
 
-Write functions to fit and predict from a simple exponential (nonlinear) model with three parameters defined by 'beta[1] + beta[2]*exp(-beta[3]*x)'. Hint: make copies of 'fit_lin' and 'predict_lin' and modify them to fit the nonlinear model. Use c(-1.0, 0.0, -0.3) as 'beta_init'.
+# Non-linear Model
 
 ```{r non-linear model}
 
@@ -131,9 +149,7 @@ model_exp <- function(beta){
 ```
 
 
-Create a figure that shows lpsa (x-axis) versus lcavol (y-axis). Add and label (using the 'legend' function) the nonlinear model predictors associated with L2 loss, L1 loss, and tilted absolute value loss for tau = 0.25 and 0.75.
-
-```{r}
+```{r non-linear fit}
 
 # l2 loss
 exp_beta_2 <- fit_exp(y=prostate_train$lcavol,
@@ -168,14 +184,16 @@ plot_psa_data()
 ## plot predictions
 curve(exp_model1,from=0,to=15,add=T,col='red')
 curve(exp_model2,from=0,to=15,add=T,col='orange')
-curve(exp_model_tilt25,from=0,to=15,add=T,col='blue')
-curve(exp_model_tilt75,from=0,to=15,add=T,col='green')
+curve(exp_model_tilt25,from=0,to=15,add=T,col='green')
+curve(exp_model_tilt75,from=0,to=15,add=T,col='blue')
+legend(4,1.3,legend = c('L1 loss','L2 loss','tilted(tau=0.25)','tilted(tau=0.75)'),lty=1:1,col=c('red','orange','green','blue'),title='method',cex=0.8)
+title(main='non-linear model fitting')
 ```
 
 
 
 
-
+·
 
 
 
