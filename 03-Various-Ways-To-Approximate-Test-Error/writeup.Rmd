@@ -1,5 +1,7 @@
 ---
-title: "R Notebook"
+title: "k-fold cross validation and k-NN method tuning parameter choosing"
+author: Can Luo
+date: "`r date()`"
 output: html_notebook
 editor_options: 
   chunk_output_type: console
@@ -151,7 +153,7 @@ y_val<-validata$accel
 x_val<-matrix(validata$times, length(validata$times), 1)
 y_hat_val<-nadaraya_watson(y, x, x_val,kern=kernel_k_nearest_neighbors, k=k_slider)
 vali_error<-error(y_val,y_hat_val)
-  plot(x, y, xlab="Time (ms)", ylab="Acceleration (g)")
+  plot(x, y, xlab="Time (ms)", ylab="Acceleration (g)",main='How k changes the shape of k-NN model')
     legend('topright', legend = c(
     paste0('training error = ', round(train_error,1)),
     paste0('aic = ', round(aic_error, 1)),
@@ -159,6 +161,7 @@ vali_error<-error(y_val,y_hat_val)
     paste0('validation error = ', round(vali_error, 1))),
     bty='n')
   lines(x_plot, y_hat_plot, col="#882255", lwd=2) 
+  
 }, k_slider=slider(1, 100, initial=1, step=1))
 ```
 
@@ -169,39 +172,40 @@ vali_error<-error(y_val,y_hat_val)
 
 
 ```{r make graph of various error changing with varying k}
-# error_when_tuning<-function(training_dat,val_dat,tune_para){
-# ## make predictions using k-NN method at training inputs
-# y <- training_dat$accel
-# x <- matrix(training_dat$times, length(training_dat$times), 1)
-# y_hat <- nadaraya_watson(y, x, x,
-#   kern=kernel_k_nearest_neighbors, k=tune_para)
-# ## compute effective degrees of freedom
-# edf <- effective_df(y, x, kern=kernel_k_nearest_neighbors, k=tune_para)
-# aic_error<-aic(y, y_hat, edf)
-# bic_error<-bic(y, y_hat, edf)
-# train_error<-error(y,y_hat)
-# ## make predictions using k-NN method at validation inputs
-# y_val<-val_dat$accel
-# x_val<-matrix(val_dat$times, length(val_dat$times), 1)
-# y_hat_val<-nadaraya_watson(y, x, x_val,kern=kernel_k_nearest_neighbors, k=tune_para)
-# vali_error<-error(y_val,y_hat_val)
-# return (c('aic'=aic_error,'bic'=bic_error,'train_error'=train_error,'vali_error'=vali_error))
-# }
-# 
-# k_tune<-1:20
-# for (i in seq_along(k_tune)){
-#   errors<-error_when_tuning(traindata,validata,i)
-#   if (i==1){
-#     tune_vector<-errors
-#   }else{
-#     tune_vector<-tune_vector %>% rbind(errors)
-#   }
-# }
-# tune_df<-tune_vector %>% as.data.frame()%>% mutate(k=k_tune) %>% pivot_longer(1:4,names_to = 'error_type')
-# 
-# tune_df %>% ggplot(aes(x=k,y=value,group=error_type))+geom_line(aes(group=error_type,col=error_type))
+error_when_tuning<-function(training_dat,val_dat,tune_para){
+## make predictions using k-NN method at training inputs
+y <- training_dat$accel
+x <- matrix(training_dat$times, length(training_dat$times), 1)
+y_hat <- nadaraya_watson(y, x, x,
+  kern=kernel_k_nearest_neighbors, k=tune_para)
+## compute effective degrees of freedom
+edf <- effective_df(y, x, kern=kernel_k_nearest_neighbors, k=tune_para)
+aic_error<-aic(y, y_hat, edf)
+bic_error<-bic(y, y_hat, edf)
+train_error<-error(y,y_hat)
+## make predictions using k-NN method at validation inputs
+y_val<-val_dat$accel
+x_val<-matrix(val_dat$times, length(val_dat$times), 1)
+y_hat_val<-nadaraya_watson(y, x, x_val,kern=kernel_k_nearest_neighbors, k=tune_para)
+vali_error<-error(y_val,y_hat_val)
+return (c('aic'=aic_error,'bic'=bic_error,'train_error'=train_error,'vali_error'=vali_error))
+}
+
+k_tune<-1:20
+for (i in seq_along(k_tune)){
+  errors<-error_when_tuning(traindata,validata,i)
+  if (i==1){
+    tune_vector<-errors
+  }else{
+    tune_vector<-tune_vector %>% rbind(errors)
+  }
+}
+tune_df<-tune_vector %>% as.data.frame()%>% mutate(k=k_tune) %>% pivot_longer(1:4,names_to = 'error_type')
+
+tune_df %>% ggplot(aes(x=k,y=value,group=error_type))+geom_line(aes(group=error_type,col=error_type))+labs(title = 'AIC,BIC,training error, validation error changes over k')
 ```
 
+We can see that as k increases, the training error goes up because the bias becomes bigger when more neighbors are taken into account. Test error goes down as k increases because the model is less flexible when  more neighbors are taken into account.
 
 
 
@@ -234,15 +238,17 @@ for (k in 1:20){
   }
 }
 ftune_df<-ftune_vector %>% as.data.frame()%>% mutate(top=CV_estimated+std_error,bottom= CV_estimated-std_error)
-plot(data=ftune_df,CV_estimated~k,ylim=c(min(CV_estimated)-200,max(CV_estimated)+600))
+plot(data=ftune_df,CV_estimated~k,ylim=c(min(CV_estimated)-200,max(CV_estimated)+600),
+     main='Test error estimated by 5-fold CV changes over k')
 segments(ftune_df$k,ftune_df$top,ftune_df$k,ftune_df$bottom)
+hline<-(ftune_df %>% arrange(CV_estimated) %>% head(1) )$top[[1]]
+abline(h=hline,lty=2)
 
-ftune_df %>% arrange(CV_estimated) %>% head(4)
 ```
 
 
 
-According to the result, we can see when k=8, test error is the least, so we get most variance here. Hence, I choose k=8 as the best model.
+According to the result, we can see when k=8, test error is the least. And according to one standard error rule, we want a simplest model of which the test error is no more than (the lest test error+one standard error).And since this is k-NN method, the more neighbors we choose, the simpler the model is.  Hence, from the horizontal dashed line, we could see the simplest model with test error under (the lest test error+one standard error) is at k=18. Finally, we choose k=18 .
 
 
 
