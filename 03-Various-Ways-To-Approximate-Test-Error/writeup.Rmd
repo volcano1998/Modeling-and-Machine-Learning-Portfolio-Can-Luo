@@ -165,7 +165,7 @@ vali_error<-error(y_val,y_hat_val)
 }, k_slider=slider(1, 100, initial=1, step=1))
 ```
 
-
+We can see that as k-NN's increase, the model becomes smoother and simpler. So the less the k is, the model is tending to overfitting.
 
 
 
@@ -249,8 +249,4 @@ abline(h=hline,lty=2)
 
 
 According to the result, we can see when k=8, test error is the least. And according to one standard error rule, we want a simplest model of which the test error is no more than (the lest test error+one standard error).And since this is k-NN method, the more neighbors we choose, the simpler the model is.  Hence, from the horizontal dashed line, we could see the simplest model with test error under (the lest test error+one standard error) is at k=18. Finally, we choose k=18 .
-
-
-
-
 
