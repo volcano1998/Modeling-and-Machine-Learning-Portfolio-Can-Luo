@@ -9,5 +9,6 @@ https://github.com/volcano1998/Modeling-and-Machine-Learning-Portfolio-Can-Luo/t
 assignment03
 https://github.com/volcano1998/Modeling-and-Machine-Learning-Portfolio-Can-Luo/tree/master/03-Various-Ways-To-Approximate-Test-Error
 
-
+assignment04
+https://github.com/volcano1998/Modeling-and-Machine-Learning-Portfolio-Can-Luo/tree/master/04-random-forest-classifier
 
