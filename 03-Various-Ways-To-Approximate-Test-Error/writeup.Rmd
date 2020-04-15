@@ -2,9 +2,7 @@
 title: "k-fold cross validation and k-NN method tuning parameter choosing"
 author: Can Luo
 date: "`r date()`"
-output: html_notebook
-editor_options: 
-  chunk_output_type: console
+output: md_document
 ---
 
 ```{r  overview of the data}
@@ -140,7 +138,9 @@ y <- traindata$accel
 x <- matrix(traindata$times, length(traindata$times), 1)
 x_plot <- matrix(seq(min(x),max(x),length.out=100),100,1)
 
-manipulate({
+
+k_set<-seq(1,100,20)
+for (k_slider in k_set){
   y_hat <- nadaraya_watson(y, x, x,
      kern=kernel_k_nearest_neighbors, k=k_slider)
   y_hat_plot <- nadaraya_watson(y, x, x_plot,
@@ -155,14 +155,37 @@ y_hat_val<-nadaraya_watson(y, x, x_val,kern=kernel_k_nearest_neighbors, k=k_slid
 vali_error<-error(y_val,y_hat_val)
   plot(x, y, xlab="Time (ms)", ylab="Acceleration (g)",main='How k changes the shape of k-NN model')
     legend('topright', legend = c(
+    paste0('k = ', k_slider),
     paste0('training error = ', round(train_error,1)),
     paste0('aic = ', round(aic_error, 1)),
     paste0('bic = ', round(bic_error, 1)),
     paste0('validation error = ', round(vali_error, 1))),
     bty='n')
   lines(x_plot, y_hat_plot, col="#882255", lwd=2) 
-  
-}, k_slider=slider(1, 100, initial=1, step=1))
+}
+# manipulate({
+#   y_hat <- nadaraya_watson(y, x, x,
+#      kern=kernel_k_nearest_neighbors, k=k_slider)
+#   y_hat_plot <- nadaraya_watson(y, x, x_plot,
+#     kern=kernel_k_nearest_neighbors, k=k_slider)
+#   edf <- effective_df(y, x, kern=kernel_k_nearest_neighbors, k=k_slider)
+# aic_error<-aic(y, y_hat, edf)
+# bic_error<-bic(y, y_hat, edf)
+# train_error<-error(y,y_hat)
+# y_val<-validata$accel
+# x_val<-matrix(validata$times, length(validata$times), 1)
+# y_hat_val<-nadaraya_watson(y, x, x_val,kern=kernel_k_nearest_neighbors, k=k_slider)
+# vali_error<-error(y_val,y_hat_val)
+#   plot(x, y, xlab="Time (ms)", ylab="Acceleration (g)",main='How k changes the shape of k-NN model')
+#     legend('topright', legend = c(
+#     paste0('training error = ', round(train_error,1)),
+#     paste0('aic = ', round(aic_error, 1)),
+#     paste0('bic = ', round(bic_error, 1)),
+#     paste0('validation error = ', round(vali_error, 1))),
+#     bty='n')
+#   lines(x_plot, y_hat_plot, col="#882255", lwd=2) 
+#   
+# }, k_slider=slider(1, 100, initial=1, step=1))
 ```
 
 We can see that as k-NN's increase, the model becomes smoother and simpler. So the less the k is, the model is tending to overfitting.
